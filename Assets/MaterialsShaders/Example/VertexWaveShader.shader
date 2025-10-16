@@ -1,56 +1,70 @@
-Shader "Unlit/VertexWaveShader"
+Shader "URP/VertexWaveShader"
 {
     Properties
     {
-        _Color ("Color",Color)= (0,0,0,0)
-        _Speed ("Speed", Range(0,5))=1
-        _Height ("Height",Range(0,1))=.25
-        _Frequency("Frequency",Range(0,10))=3
+        _Color ("Color", Color) = (0.2, 0.5, 1.0, 1.0)
+        _Speed ("Wave Speed", Range(0, 5)) = 1
+        _Height ("Wave Height", Range(0, 1)) = 0.25
+        _Frequency ("Wave Frequency", Range(0, 10)) = 3
     }
+
     SubShader
     {
-        Tags { "RenderType"="Opaque" }
+        Tags
+        {
+            "RenderType" = "Opaque"
+            "RenderPipeline" = "UniversalPipeline"
+            "Queue" = "Geometry"
+        }
 
         Pass
         {
-            CGPROGRAM
+            Name "ForwardLit"
+            Tags { "LightMode" = "UniversalForward" }
+
+            HLSLPROGRAM
             #pragma vertex vert
             #pragma fragment frag
 
-            #include "UnityCG.cginc"
+            #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Core.hlsl"
 
-            fixed4 _Color;
-            float _Speed;
-            float _Height;
-            float _Frequency;
-            
-            struct appdata
+            struct Attributes
             {
-                float4 vertex : POSITION;
+                float4 positionOS : POSITION;
             };
 
-            struct v2f
+            struct Varyings
             {
-                float4 pos : SV_POSITION;
+                float4 positionHCS : SV_POSITION;
             };
 
-            sampler2D _MainTex;
-            float4 _MainTex_ST;
+            CBUFFER_START(UnityPerMaterial)
+                half4 _Color;
+                float _Speed;
+                float _Height;
+                float _Frequency;
+            CBUFFER_END
 
-            v2f vert (appdata v)
+            Varyings vert (Attributes input)
             {
-                v2f o;
-                float wave=sin(v.vertex.x*_Frequency+_Time.y*_Speed)*_Height;
-                v.vertex.y+=wave;
-                o.pos=UnityObjectToClipPos(v.vertex);
-                return o;
+                Varyings output;
+
+                // Apply wave displacement
+                float wave = sin(input.positionOS.x * _Frequency + _Time.y * _Speed) * _Height;
+                input.positionOS.y += wave;
+
+                output.positionHCS = TransformObjectToHClip(input.positionOS.xyz);
+
+                return output;
             }
 
-            fixed4 frag (v2f i) : SV_Target
+            half4 frag (Varyings input) : SV_Target
             {
                 return _Color;
             }
-            ENDCG
+            ENDHLSL
         }
     }
+
+    FallBack "Universal Render Pipeline/Unlit"
 }

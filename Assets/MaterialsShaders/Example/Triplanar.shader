@@ -1,60 +1,98 @@
-Shader "Unlit/Triplanar"
+Shader "URP/Triplanar"
 {
     Properties
     {
         _MainTex ("Texture", 2D) = "white" {}
-        _Tiling ("Tiling", Float )=1.0
-        _OcclusionMap("Occlusion",2D)="white"
+        _Tiling ("Tiling", Float) = 1.0
+        _BlendSharpness ("Blend Sharpness", Range(1, 10)) = 4.0
+        _OcclusionMap ("Occlusion", 2D) = "white" {}
     }
+
     SubShader
     {
+        Tags
+        {
+            "RenderType" = "Opaque"
+            "RenderPipeline" = "UniversalPipeline"
+            "Queue" = "Geometry"
+        }
+
         Pass
         {
+            Name "ForwardLit"
+            Tags { "LightMode" = "UniversalForward" }
+
             HLSLPROGRAM
             #pragma vertex vert
             #pragma fragment frag
 
-            #include "UnityCG.cginc"
+            #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Core.hlsl"
 
-            struct v2f
+            struct Attributes
             {
-                half3 objNormal:TEXCOORD0;
-                float3 coord:TEXCOORD1;
-                float2 uv:TEXCOORD2;
-                float4 pos:POSITION;
+                float4 positionOS : POSITION;
+                float3 normalOS : NORMAL;
+                float2 uv : TEXCOORD0;
             };
 
-            float _Tiling;
-            sampler2D _MainTex;
-            sampler2D _OcclusionMap;
-
-            v2f vert (float4 pos:POSITION, float3 normal:NORMAL, float2 uv:TEXCOORD0)
+            struct Varyings
             {
-                v2f o;
-                 o.pos=UnityObjectToClipPos(pos);
-                o.coord=pos.xyz*_Tiling;
-                o.objNormal=normal;
-                o.uv=uv;
-                return o;
+                float4 positionHCS : SV_POSITION;
+                float3 positionOS : TEXCOORD0;
+                float3 normalOS : TEXCOORD1;
+                float2 uv : TEXCOORD2;
+            };
+
+            TEXTURE2D(_MainTex);
+            SAMPLER(sampler_MainTex);
+
+            TEXTURE2D(_OcclusionMap);
+            SAMPLER(sampler_OcclusionMap);
+
+            CBUFFER_START(UnityPerMaterial)
+                float4 _MainTex_ST;
+                float4 _OcclusionMap_ST;
+                float _Tiling;
+                float _BlendSharpness;
+            CBUFFER_END
+
+            Varyings vert (Attributes input)
+            {
+                Varyings output;
+                output.positionHCS = TransformObjectToHClip(input.positionOS.xyz);
+                output.positionOS = input.positionOS.xyz;
+                output.normalOS = input.normalOS;
+                output.uv = TRANSFORM_TEX(input.uv, _OcclusionMap);
+                return output;
             }
 
-            fixed4 frag (v2f i) : SV_Target
+            half4 frag (Varyings input) : SV_Target
             {
-                  // use absolute value of normal as texture weights
-                 half3 blend=abs(i.objNormal);
-                  // make sure the weights sum up to 1 (divide by sum of x+y+z)
-                blend/=dot(blend,1.0);
-                  // read the three texture projections, for x,y,z axes
-                 fixed4 cx=tex2D(_MainTex,i.coord.yz);
-                 fixed4 cy = tex2D(_MainTex, i.coord.xz);
-                 fixed4 cz = tex2D(_MainTex, i.coord.xy);
-                // blend the textures based on weights
-                fixed4 c=cx*blend.x+cy*blend.y+cz*blend.z;
-                // modulate by regular occlusion map
-                c*=tex2D(_OcclusionMap,i.uv);
-                return c;
+                // Triplanar coordinates
+                float3 coord = input.positionOS * _Tiling;
+
+                // Sample texture for each axis
+                half4 texX = SAMPLE_TEXTURE2D(_MainTex, sampler_MainTex, coord.yz);
+                half4 texY = SAMPLE_TEXTURE2D(_MainTex, sampler_MainTex, coord.xz);
+                half4 texZ = SAMPLE_TEXTURE2D(_MainTex, sampler_MainTex, coord.xy);
+
+                // Calculate blend weights using absolute normal values
+                float3 blend = pow(abs(input.normalOS), _BlendSharpness);
+                // Normalize weights so they sum to 1
+                blend = blend / (blend.x + blend.y + blend.z);
+
+                // Blend the three projections
+                half4 triplanarColor = texX * blend.x + texY * blend.y + texZ * blend.z;
+
+                // Apply occlusion map
+                half4 occlusion = SAMPLE_TEXTURE2D(_OcclusionMap, sampler_OcclusionMap, input.uv);
+                triplanarColor *= occlusion;
+
+                return triplanarColor;
             }
             ENDHLSL
         }
     }
+
+    FallBack "Universal Render Pipeline/Unlit"
 }

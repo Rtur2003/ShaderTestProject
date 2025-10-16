@@ -1,43 +1,79 @@
-Shader "Unlit/SdfShader"
+Shader "URP/SdfShader"
 {
+    Properties
+    {
+        _CircleRadius("Circle Radius", Range(0, 1)) = 0.3
+        _EdgeSmoothness("Edge Smoothness", Range(0, 0.1)) = 0.01
+        _CircleColor("Circle Color", Color) = (1, 1, 1, 1)
+        _BackgroundColor("Background Color", Color) = (0, 0, 0, 1)
+    }
+
     SubShader
     {
-        Tags { "RenderType"="Opaque" }
+        Tags
+        {
+            "RenderType" = "Opaque"
+            "RenderPipeline" = "UniversalPipeline"
+            "Queue" = "Geometry"
+        }
 
         Pass
         {
-            CGPROGRAM
+            Name "ForwardLit"
+            Tags { "LightMode" = "UniversalForward" }
+
+            HLSLPROGRAM
             #pragma vertex vert
             #pragma fragment frag
 
-            #include "UnityCG.cginc"
+            #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Core.hlsl"
 
-            struct MeshData
+            struct Attributes
             {
-                float4 vertex : POSITION;
+                float4 positionOS : POSITION;
                 float2 uv : TEXCOORD0;
             };
 
-            struct Interpolators
+            struct Varyings
             {
+                float4 positionHCS : SV_POSITION;
                 float2 uv : TEXCOORD0;
-                float4 vertex : SV_POSITION;
             };
-            Interpolators vert (MeshData v)
+
+            CBUFFER_START(UnityPerMaterial)
+                float _CircleRadius;
+                float _EdgeSmoothness;
+                half4 _CircleColor;
+                half4 _BackgroundColor;
+            CBUFFER_END
+
+            Varyings vert (Attributes input)
             {
-                Interpolators o;
-                o.vertex = UnityObjectToClipPos(v.vertex);
-                o.uv = v.uv*2-1;
-                return o;
+                Varyings output;
+                output.positionHCS = TransformObjectToHClip(input.positionOS.xyz);
+
+                // Convert UV from [0,1] to [-1,1] for SDF
+                output.uv = input.uv * 2.0 - 1.0;
+
+                return output;
             }
 
-            fixed4 frag (Interpolators i) : SV_Target
+            half4 frag (Varyings input) : SV_Target
             {
-                float dist=length(i.uv)-.3;
-                //return step(0,dist);
-                return float4(dist.xxx,0);
+                // Signed Distance Field: circle
+                float dist = length(input.uv) - _CircleRadius;
+
+                // Smooth step for anti-aliased edge
+                float circle = smoothstep(_EdgeSmoothness, -_EdgeSmoothness, dist);
+
+                // Blend between background and circle color
+                half4 color = lerp(_BackgroundColor, _CircleColor, circle);
+
+                return color;
             }
-            ENDCG
+            ENDHLSL
         }
     }
+
+    FallBack "Universal Render Pipeline/Unlit"
 }

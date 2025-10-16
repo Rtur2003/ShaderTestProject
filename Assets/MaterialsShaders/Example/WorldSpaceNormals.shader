@@ -1,38 +1,58 @@
-Shader "Unlit/WorldSpaceNormals"
+Shader "URP/WorldSpaceNormals"
 {
     SubShader
     {
-        Tags { "RenderType"="Opaque" }
+        Tags
+        {
+            "RenderType" = "Opaque"
+            "RenderPipeline" = "UniversalPipeline"
+            "Queue" = "Geometry"
+        }
 
         Pass
         {
+            Name "ForwardLit"
+            Tags { "LightMode" = "UniversalForward" }
+
             HLSLPROGRAM
             #pragma vertex vert
             #pragma fragment frag
 
-            #include "UnityCG.cginc"
-            
-            struct v2f
+            #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Core.hlsl"
+
+            struct Attributes
             {
-                half3 worldNormal : TEXCOORD0;
-                float4 pos : SV_POSITION;
+                float4 positionOS : POSITION;
+                float3 normalOS : NORMAL;
             };
 
-            v2f vert (float4 vertex : POSITION, float3 normal : NORMAL)
+            struct Varyings
             {
-                v2f o;
-                o.pos=UnityObjectToClipPos(vertex);
-                o.worldNormal=UnityObjectToWorldNormal(normal);
-                return o;
+                float4 positionHCS : SV_POSITION;
+                float3 normalWS : TEXCOORD0;
+            };
+
+            Varyings vert (Attributes input)
+            {
+                Varyings output;
+                output.positionHCS = TransformObjectToHClip(input.positionOS.xyz);
+                output.normalWS = TransformObjectToWorldNormal(input.normalOS);
+                return output;
             }
 
-            fixed4 frag (v2f i) : SV_Target
+            half4 frag (Varyings input) : SV_Target
             {
-                 fixed4 c=0;
-                c.rgb=i.worldNormal*.5+.5;
-                return c;
+                // Normalize world space normal
+                half3 normalWS = normalize(input.normalWS);
+
+                // Convert from [-1,1] to [0,1] for visualization
+                half3 color = normalWS * 0.5 + 0.5;
+
+                return half4(color, 1.0);
             }
             ENDHLSL
         }
     }
+
+    FallBack "Universal Render Pipeline/Unlit"
 }

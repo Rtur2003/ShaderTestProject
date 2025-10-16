@@ -1,72 +1,84 @@
-Shader "Unlit/BasicHealthbar"
+Shader "URP/BasicHealthbar"
 {
     Properties
     {
        [NoScaleOffset] _MainTex ("Texture", 2D) = "white" {}
-        _Health ("Health", Range(0,1)) = 1.0 
+        _Health ("Health", Range(0,1)) = 1.0
     }
+
     SubShader
     {
-        Tags { "RenderType"="Transparent" "Queue"="Transparent"}
+        Tags
+        {
+            "RenderType" = "Transparent"
+            "Queue" = "Transparent"
+            "RenderPipeline" = "UniversalPipeline"
+        }
 
         Pass
         {
+            Name "ForwardLit"
+            Tags { "LightMode" = "UniversalForward" }
+
             ZWrite Off
-            
-            // src * SrcAlpha dst * (1-srcAlpha)
-            Blend SrcAlpha OneMinusSrcAlpha //Alpha Blending
-            
-            CGPROGRAM
+            Blend SrcAlpha OneMinusSrcAlpha
+
+            HLSLPROGRAM
             #pragma vertex vert
             #pragma fragment frag
 
-            #include "UnityCG.cginc"
+            #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Core.hlsl"
 
-            struct MeshData
+            struct Attributes
             {
-                float4 vertex : POSITION;
+                float4 positionOS : POSITION;
                 float2 uv : TEXCOORD0;
             };
 
-            struct Interpolators
+            struct Varyings
             {
+                float4 positionHCS : SV_POSITION;
                 float2 uv : TEXCOORD0;
-                UNITY_FOG_COORDS(1)
-                float4 vertex : SV_POSITION;
             };
 
-            sampler2D _MainTex;
-            float _Health;
+            TEXTURE2D(_MainTex);
+            SAMPLER(sampler_MainTex);
 
-            Interpolators vert (MeshData v)
-            {
-                Interpolators o;
-                o.vertex = UnityObjectToClipPos(v.vertex);
-                o.uv = v.uv;
-                return o;
-            }
+            CBUFFER_START(UnityPerMaterial)
+                float _Health;
+            CBUFFER_END
 
-            // Set thresholds to certain points. For example if a<0.2 then returns red every point...
+            // Inverse lerp: converts value from [a,b] range to [0,1]
             float InverseLerp(float a, float b, float v)
             {
-                return (v-a)/(b-a);
+                return (v - a) / (b - a);
             }
 
-            float4 frag (Interpolators i) : SV_Target
+            Varyings vert (Attributes input)
             {
-                float healthbarMask=_Health > i.uv.x;          //if you want to life is increase or decrease part by part use floor(i.uv.x*partCount)/partCount;
-                                                                // Mathf.Lerp() --> clamped ... lerp() --> unclamped
-                 //clip(healthbarMask-.5);
-                
-                float tHealth=saturate(InverseLerp(0.3,0.8,_Health));  // saturate function is clamping the values between 0 and 1
-                float3 healthColor=lerp(float3(1,0,0),float3(0,1,0),tHealth);
-
-                //float3 backgroundColor=float3(0,0,0);
-                //float3 outputColor=lerp(backgroundColor,healthColor,healthbarMask);
-                
-                return float4(healthColor*healthbarMask,1);
+                Varyings output;
+                output.positionHCS = TransformObjectToHClip(input.positionOS.xyz);
+                output.uv = input.uv;
+                return output;
             }
-            ENDCG
+
+            half4 frag (Varyings input) : SV_Target
+            {
+                // Health bar mask
+                float healthbarMask = _Health > input.uv.x;
+
+                // Color transition from red to green based on health
+                float tHealth = saturate(InverseLerp(0.3, 0.8, _Health));
+                half3 healthColor = lerp(half3(1, 0, 0), half3(0, 1, 0), tHealth);
+
+                // Apply mask
+                half3 finalColor = healthColor * healthbarMask;
+
+                return half4(finalColor, 1.0);
+            }
+            ENDHLSL
         }
     }
+
+    FallBack "Universal Render Pipeline/Unlit"
 }

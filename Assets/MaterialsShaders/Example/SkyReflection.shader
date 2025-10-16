@@ -1,42 +1,82 @@
-Shader "Unlit/SkyReflection"
+Shader "URP/SkyReflection"
 {
+    Properties
+    {
+        _ReflectionStrength("Reflection Strength", Range(0, 2)) = 1.5
+    }
+
     SubShader
     {
-        Tags { "RenderType"="Opaque" }
+        Tags
+        {
+            "RenderType" = "Opaque"
+            "RenderPipeline" = "UniversalPipeline"
+            "Queue" = "Geometry"
+        }
 
         Pass
         {
+            Name "ForwardLit"
+            Tags { "LightMode" = "UniversalForward" }
+
             HLSLPROGRAM
             #pragma vertex vert
             #pragma fragment frag
-            #include "UnityCG.cginc"
-             
-            struct v2f
+
+            #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Core.hlsl"
+
+            struct Attributes
             {
-               float3 worldRefl : TEXCOORD0;
-               float4 pos : SV_POSITION;
+                float4 positionOS : POSITION;
+                float3 normalOS : NORMAL;
             };
-             
-            v2f vert (float4 vertex : POSITION, float3 normal : NORMAL)
+
+            struct Varyings
             {
-                v2f o;
-                o.pos = UnityObjectToClipPos(vertex);
-                float3 worldPos = mul(unity_ObjectToWorld, vertex).xyz;
-                float3 worldViewDir = normalize(UnityWorldSpaceViewDir(worldPos));
-                float3 worldNormal = UnityObjectToWorldNormal(normal);
-                o.worldRefl = reflect(-worldViewDir, worldNormal);
-                return o;
+                float4 positionHCS : SV_POSITION;
+                float3 worldReflection : TEXCOORD0;
+            };
+
+            CBUFFER_START(UnityPerMaterial)
+                float _ReflectionStrength;
+            CBUFFER_END
+
+            Varyings vert (Attributes input)
+            {
+                Varyings output;
+
+                // Transform to clip space
+                output.positionHCS = TransformObjectToHClip(input.positionOS.xyz);
+
+                // Calculate world space position and normal
+                float3 worldPos = TransformObjectToWorld(input.positionOS.xyz);
+                float3 worldNormal = TransformObjectToWorldNormal(input.normalOS);
+
+                // Calculate view direction
+                float3 worldViewDir = normalize(GetWorldSpaceViewDir(worldPos));
+
+                // Calculate reflection vector
+                output.worldReflection = reflect(-worldViewDir, worldNormal);
+
+                return output;
             }
 
-            fixed4 frag (v2f i) : SV_Target
+            half4 frag (Varyings input) : SV_Target
             {
-               half4 skyData = UNITY_SAMPLE_TEXCUBE(unity_SpecCube0, i.worldRefl);
-               
-               half3 skyColor = 1.5*skyData.rgb * skyData.a;
-               
-               return fixed4(skyColor, 1);
+                // Sample reflection probe (environment cubemap)
+                half4 skyData = SAMPLE_TEXTURECUBE_LOD(unity_SpecCube0, samplerunity_SpecCube0, input.worldReflection, 0);
+
+                // Decode HDR
+                half3 skyColor = DecodeHDREnvironment(skyData, unity_SpecCube0_HDR);
+
+                // Apply reflection strength
+                skyColor *= _ReflectionStrength;
+
+                return half4(skyColor, 1.0);
             }
             ENDHLSL
         }
     }
+
+    FallBack "Universal Render Pipeline/Unlit"
 }
