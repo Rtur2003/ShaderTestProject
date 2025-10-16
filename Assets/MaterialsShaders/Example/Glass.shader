@@ -52,7 +52,7 @@ Shader "URP/Glass"
             Varyings vert (Attributes input)
             {
                 Varyings output;
-                output.positionHCS = TransformObjectToHClip(input.positionOS.xyz)*_GlassAmount;
+                output.positionHCS = TransformObjectToHClip(input.positionOS.xyz);
                 return output;
             }
 

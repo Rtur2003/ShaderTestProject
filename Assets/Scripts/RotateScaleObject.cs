@@ -1,6 +1,4 @@
-using System;
 using UnityEngine;
-using Random = System.Random;
 
 public class RotateScaleObject : MonoBehaviour
 {
@@ -39,12 +37,11 @@ public class RotateScaleObject : MonoBehaviour
          if (rotateOnY) rotationAxis.y = 1;
          if (rotateOnX) rotationAxis.x = 1;
          if (rotateOnZ) rotationAxis.z = 1;
-         
-         if(rotationAxis == Vector3.zero) 
+
+         // If no axis selected, default to Y axis
+         if(rotationAxis == Vector3.zero)
          {
-            rotationAxis.x =0;
-            rotationAxis.y=0; 
-            rotationAxis.z=0;
+            rotationAxis.y = 1;
          }
       }
       initialScale = transform.localScale;
@@ -65,7 +62,6 @@ public class RotateScaleObject : MonoBehaviour
 
    private void Resize()
    {
-      float currentScale = transform.localScale.x;
       if (currentlyGrowing)
       {
          transform.localScale += Vector3.one * growSpeed * Time.deltaTime;

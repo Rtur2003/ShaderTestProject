@@ -231,7 +231,7 @@ Shader "Custom/WaterShader"
                 half alpha = _Transparency;
                 alpha = lerp(alpha, 1.0, saturate(foam + edgeFoam)); // Foam'lar opak
                 alpha *= saturate(depthFactor * 2.0); // Derinlikle şeffaflık
-                alpha *= fresnel; // Fresnel etkisi
+                alpha = lerp(alpha, 1.0, fresnel * 0.5); // Fresnel kenarları daha opak yapar
                 
                 // Fog
                 finalColor = MixFog(finalColor, input.fogCoord);

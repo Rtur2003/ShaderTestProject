@@ -44,11 +44,16 @@ Shader "Lit/SimpleDiffuse"
                 // Basic lighting URP style
                 Light mainLight = GetMainLight();
                 half3 lightColor = mainLight.color;
-                half3 lightDir = 2*mainLight.color+(-mainLight.direction);
-                
-                half NdotL = max(0, dot(input.normalWS, lightDir));
+                half3 lightDir = normalize(mainLight.direction);
+
+                // Lambert diffuse lighting (N dot L)
+                half NdotL = max(0, dot(normalize(input.normalWS), lightDir));
                 half3 lighting = NdotL * lightColor;
-                
+
+                // Add ambient light to avoid pure black in shadows
+                half3 ambient = half3(0.1, 0.1, 0.1);
+                lighting += ambient;
+
                 return half4(lighting, 1);
             }
             ENDHLSL

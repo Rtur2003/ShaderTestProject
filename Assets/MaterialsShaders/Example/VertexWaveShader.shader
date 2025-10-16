@@ -1,4 +1,4 @@
-Shader "Unlit/Deneme"
+Shader "Unlit/VertexWaveShader"
 {
     Properties
     {
