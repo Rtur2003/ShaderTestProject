@@ -1,3 +1,19 @@
+/*
+ * BasicHealthbar Shader
+ *
+ * Purpose: Simple UI health bar with color gradient
+ * Use Case: Game UI, health/mana/energy bars
+ * Performance: Very Low (UI shader)
+ *
+ * Features:
+ * - Health-based fill mask
+ * - Color gradient (red → green)
+ * - Smooth color transition
+ * - Transparency support
+ *
+ * Learning: UI shader basics, masking techniques
+ */
+
 Shader "URP/BasicHealthbar"
 {
     Properties

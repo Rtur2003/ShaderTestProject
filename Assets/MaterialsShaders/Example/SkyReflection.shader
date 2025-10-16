@@ -1,3 +1,17 @@
+/*
+ * SkyReflection Shader
+ *
+ * Purpose: Creates realistic reflections from environment cubemap
+ * Use Case: Metallic/reflective surfaces, chrome effects
+ * Performance: Low (cubemap sampling)
+ *
+ * Features:
+ * - Environment reflection probe sampling
+ * - HDR decoding for accurate lighting
+ * - Adjustable reflection strength
+ * - Perfect for mirror-like surfaces
+ */
+
 Shader "URP/SkyReflection"
 {
     Properties

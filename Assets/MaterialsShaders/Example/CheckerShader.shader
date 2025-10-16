@@ -1,3 +1,17 @@
+/*
+ * CheckerShader
+ *
+ * Purpose: Procedural checkerboard pattern generator
+ * Use Case: Test patterns, UV debugging, animated backgrounds
+ * Performance: Very Low (procedural, no textures)
+ *
+ * Features:
+ * - Procedural checker pattern
+ * - Adjustable density
+ * - Animated scrolling on X/Y axes
+ * - Two-color customization
+ */
+
 Shader "URP/CheckerShader"
 {
     Properties

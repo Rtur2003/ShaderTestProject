@@ -1,3 +1,22 @@
+/*
+ * AdvancedHealthbar Shader
+ *
+ * Purpose: Feature-rich animated health bar with liquid effects
+ * Use Case: Premium game UI, stylized health displays
+ * Performance: Medium (noise calculations, animations)
+ *
+ * Features:
+ * - Liquid wave animation with noise distortion
+ * - Animated foam effect at liquid edge
+ * - Rounded corner clipping (SDF-based)
+ * - Customizable border
+ * - Flash effect when low health
+ * - Dynamic or static background modes
+ * - Gradient texture support
+ *
+ * Learning: Advanced UI techniques, SDF, procedural noise
+ */
+
 Shader "URP/AdvancedHealthbar"
 {
     Properties

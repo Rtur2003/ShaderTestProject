@@ -1,3 +1,19 @@
+/*
+ * VertexWaveShader
+ *
+ * Purpose: Vertex displacement with sine wave animation
+ * Use Case: Water surfaces, cloth simulation, flags, organic movement
+ * Performance: Low (vertex shader math)
+ *
+ * Features:
+ * - Procedural wave displacement
+ * - Adjustable frequency, amplitude, speed
+ * - Vertex-based animation (GPU efficient)
+ * - No texture required
+ *
+ * Learning: Vertex shader manipulation basics
+ */
+
 Shader "URP/VertexWaveShader"
 {
     Properties

@@ -1,3 +1,19 @@
+/*
+ * SDF (Signed Distance Field) Shader
+ *
+ * Purpose: Demonstrates SDF-based circle rendering
+ * Use Case: UI elements, procedural shapes, anti-aliased icons
+ * Performance: Very Low (math-based, no textures)
+ *
+ * Features:
+ * - Signed distance field circle
+ * - Smooth anti-aliased edges
+ * - Adjustable radius and smoothness
+ * - Perfect for scalable UI elements
+ *
+ * Learning: Introduction to SDF techniques
+ */
+
 Shader "URP/SdfShader"
 {
     Properties

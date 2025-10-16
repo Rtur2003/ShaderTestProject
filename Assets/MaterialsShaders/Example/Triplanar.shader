@@ -1,3 +1,20 @@
+/*
+ * Triplanar Mapping Shader
+ *
+ * Purpose: Projects texture from 3 axes without UV stretching
+ * Use Case: Terrains, procedural objects, organic shapes
+ * Performance: Medium (3x texture samples)
+ *
+ * Features:
+ * - Triplanar texture projection (X, Y, Z)
+ * - Blend based on surface normal
+ * - Adjustable blend sharpness
+ * - Occlusion map support
+ * - No UV distortion on any surface
+ *
+ * Learning: Advanced texturing technique for organic shapes
+ */
+
 Shader "URP/Triplanar"
 {
     Properties

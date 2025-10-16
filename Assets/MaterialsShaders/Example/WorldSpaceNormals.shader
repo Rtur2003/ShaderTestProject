@@ -1,3 +1,16 @@
+/*
+ * WorldSpaceNormals Shader
+ *
+ * Purpose: Visualizes world-space normals as RGB colors
+ * Use Case: Debugging normal directions, normal map validation
+ * Performance: Very Low (single pass, no textures)
+ *
+ * Features:
+ * - Displays normals in world space
+ * - Red = X axis, Green = Y axis, Blue = Z axis
+ * - Simple visualization for debugging
+ */
+
 Shader "URP/WorldSpaceNormals"
 {
     SubShader
